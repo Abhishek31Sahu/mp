@@ -1,5 +1,5 @@
-import TransactionRequest from "../models/TransactionRequest";
-import Property from "../models/landProperty";
+import TransactionRequest from "../models/TransactionRequest.js";
+import Property from "../models/landProperty.js";
 
 export const sellerRespond = async (req, res) => {
   try {

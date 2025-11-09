@@ -10,7 +10,7 @@ import {
   availableForSale,
 } from "../controller/property.js";
 
-router.post("/own", verifyAuthorization, showProperty);
+router.post("/own", showProperty);
 router.put("/sell", verifyAuthorization, upload.single("image1"), applySale);
 router.post("/find", availableForSale);
 

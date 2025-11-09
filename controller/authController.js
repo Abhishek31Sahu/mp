@@ -1,82 +1,114 @@
+// authController.js
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import User from "../models/user.js";
 
+// ------------------ SIGNUP ------------------
 export const signUp = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    const user = await User.findOne({ email });
+    const {
+      fullName,
+      email,
+      phone,
+      aadhaarNumber,
+      password,
+      role, // optional
+      kycStatus, // optional
+      verifiedPhone, // optional
+    } = req.body;
 
-    if (user) {
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res.status(409).json({
-        message: "User is already exist, you can login",
+        message: "User already exists. Please login.",
         success: false,
       });
     }
 
-    const userInfo = new User({ username, email, password });
-    console.log(userInfo);
+    // Hash password
     const salt = await bcrypt.genSalt(10);
-    userInfo.password = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    console.log(userInfo);
+    // Create new user
+    const newUser = new User({
+      fullName,
+      email,
+      phone,
+      aadhaarNumber,
+      passwordHash: hashedPassword,
+      role: role || "user",
+      kycStatus: kycStatus || "pending",
+      verifiedPhone: verifiedPhone || "pending",
+    });
 
-    await userInfo.save();
+    await newUser.save();
+
+    // Generate JWT
     const jwtToken = jwt.sign(
-      { email: email, _id: userInfo._id },
+      { email: newUser.email, _id: newUser._id },
       "abhi123@user",
       { expiresIn: "24h" }
     );
-    console.log(jwtToken);
-    res.status(200).json({
-      message: "Signup successfully",
+
+    res.status(201).json({
+      message: "Signup successful",
       success: true,
       jwtToken,
-      email,
-      name: username,
+      email: newUser.email,
+      name: newUser.fullName,
     });
   } catch (error) {
+    console.error("Signup error:", error);
     res.status(500).json({
-      message: "Internal server errror",
+      message: "Internal server error",
       success: false,
     });
   }
 };
 
+// ------------------ SIGNIN ------------------
 export const signIn = async (req, res) => {
   try {
-    const errorMsg = "you input  email or password wrong";
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+
+    // Find user by email and include passwordHash
+    const user = await User.findOne({ email }).select("+passwordHash");
     if (!user) {
-      return res.status(409).json({
-        message: errorMsg,
+      return res.status(401).json({
+        message: "Invalid email or password",
         success: false,
       });
     }
-    console.log(email);
-    const isPassEqual = await bcrypt.compare(password, user.password);
 
-    if (!isPassEqual) {
-      return res.status(403).json({ message: errorMsg, success: false });
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({
+        message: "Invalid email or password",
+        success: false,
+      });
     }
 
+    // Generate JWT including role
     const jwtToken = jwt.sign(
-      { email: user.email, _id: user._id },
+      { email: user.email, _id: user._id, role: user.role },
       "abhi123@user",
       { expiresIn: "24h" }
     );
-    console.log(jwtToken);
+
     res.status(200).json({
-      message: "Login Success",
+      message: "Login successful",
       success: true,
       jwtToken,
-      email,
-      name: user.username,
+      email: user.email,
+      name: user.fullName,
+      role: user.role, // return role in login response
     });
-  } catch (e) {
+  } catch (error) {
+    console.error("Signin error:", error);
     res.status(500).json({
-      message: "Internal server why",
+      message: "Internal server error",
       success: false,
     });
   }

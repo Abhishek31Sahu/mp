@@ -1,5 +1,6 @@
 import listing from "../models/landInfo.js";
 import User from "../models/user.js";
+import LandProperty from "../models/landProperty.js";
 export const showProperty = async (req, res) => {
   try {
     // Step 1: Get user info
@@ -14,8 +15,9 @@ export const showProperty = async (req, res) => {
     const aadhaarNumber = userData.aadhaarNumber;
 
     // Step 2: Fetch property data from Mongo (instead of blockchain API)
-    const propertyList = await LandProperty.find({ owner: aadhaarNumber });
-
+    console.log("andsngj");
+    const propertyList = await LandProperty.find();
+    console.log(propertyList);
     if (!propertyList || propertyList.length === 0) {
       return res.status(200).json({
         success: true,
@@ -24,7 +26,7 @@ export const showProperty = async (req, res) => {
         message: "No properties found for this Aadhaar number",
       });
     }
-
+    console.log(propertyList);
     // Step 3: Return property data
     res.status(200).json({
       success: true,
@@ -43,19 +45,23 @@ export const showProperty = async (req, res) => {
 };
 
 export const applySale = async (req, res) => {
-  const data = req.body.data;
-  const logoPath = req.file.path;
+  const data = JSON.parse(req.body.data);
+  const logoPath = req.file?.path;
+  console.log(logoPath);
   const info = {
     title: data.title,
     description: data.description,
     price: data.price,
-    image: logoPath,
+    image: {
+      filename: data.imageName || "default.jpg", // optional: get the filename if available
+      url: logoPath, // Cloudinary URL
+    },
     owner: req.user._id,
     landId: data.landId,
   };
   const land = new listing(info);
   await land.save();
-  res.status({
+  res.status(200).json({
     success: true,
     message: "Property successfully available for sale",
   });

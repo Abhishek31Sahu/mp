@@ -14,6 +14,7 @@ dotenv.config();
 
 import http from "http";
 import { Server } from "socket.io";
+import landProperty from "./models/landProperty.js";
 
 const app = express();
 app.use(cors());
@@ -51,10 +52,9 @@ io.on("connection", (socket) => {
     console.log("User disconnected:", socket.id);
   });
 });
-console.log(process.env.ATLASDB_URL);
 
 mongoose
-  .connect(mongodb_url, {
+  .connect("mongodb://127.0.0.1:27017/landChain", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -102,11 +102,14 @@ wss.on("connection", (ws) => {
     console.log("WebSocket connection closed");
   });
 });
-app.use("/api/", user);
+app.use("/api", user);
 app.use("/api/aadhaar", aadhaarRoutes);
 app.use("/api/property", availableProperty);
 app.use("/api/request", propertiesRequest);
-
+app.get("/api/land", async (req, res) => {
+  const data = await landProperty.find({});
+  console.log(data);
+});
 app.listen(process.env.PORT, () => {
   console.log(`✅ Server running on port ${process.env.PORT}`);
 });

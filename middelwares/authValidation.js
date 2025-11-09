@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { userValidationSchema } from "../validatingSchema/userValidationSchema";
+import { userValidationSchema } from "../validatingSchema/userValidationSchema.js";
 
 export const signupValidation = (req, res, next) => {
   const { error } = userValidationSchema.validate(req.body);
